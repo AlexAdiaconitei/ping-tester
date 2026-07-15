@@ -82,7 +82,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled { opacity: .
 .language button.active { color: var(--ink); background: var(--text); font-weight: 700; }
 .workspace { min-height: 0; display: grid; grid-template-columns: 286px minmax(480px, 1fr) 284px; }
 .sidebar, .history { min-height: 0; overflow-y: auto; background: rgba(11,21,32,.9); }
-.sidebar { border-right: 1px solid var(--line); padding: 20px; }
+.sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--line); padding: 20px; }
 .history { border-left: 1px solid var(--line); padding: 20px 16px; }
 .results { min-width: 0; min-height: 0; overflow-y: auto; padding: 24px; scroll-behavior: smooth; }
 .eyebrow { margin: 0 0 7px; color: var(--blue); font-family: Consolas, monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
@@ -114,6 +114,17 @@ h2 { margin-bottom: 6px; font-family: Bahnschrift, "Segoe UI", sans-serif; font-
 .file-drop strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 12px; }
 .file-drop.over { border-color: var(--blue); background: rgba(88,173,255,.1); }
 .file-drop.disabled { opacity: .45; pointer-events: none; }
+.sidebar-links { margin-top: auto; padding-top: 24px; }
+.sidebar-links .eyebrow { margin-bottom: 9px; }
+.sidebar-link { display: flex; align-items: center; gap: 9px; min-height: 40px; border: 1px solid var(--line); border-radius: 3px; padding: 9px 10px; background: rgba(12,23,34,.72); color: #c8d6e1; font-size: 12px; font-weight: 600; text-decoration: none; transition: border-color .14s, background .14s, color .14s, transform .14s; }
+.sidebar-link + .sidebar-link { margin-top: 7px; }
+.sidebar-link svg { width: 16px; height: 16px; flex: none; }
+.sidebar-link .external-mark { margin-left: auto; color: var(--muted); font-size: 13px; font-weight: 400; }
+.sidebar-link:hover { border-color: var(--line-hot); background: #132435; color: var(--text); }
+.sidebar-link:active { transform: translateY(1px); }
+.sidebar-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.sidebar-link.support { border-color: rgba(255,198,109,.3); background: rgba(255,198,109,.055); color: #ffe0a6; }
+.sidebar-link.support:hover { border-color: rgba(255,198,109,.62); background: rgba(255,198,109,.11); color: #ffebc4; }
 .empty { min-height: calc(100vh - 123px); display: grid; place-items: center; text-align: center; }
 .empty-inner { max-width: 470px; }
 .empty-diagram { width: 190px; height: 72px; margin: 0 auto 24px; color: var(--line-hot); }
@@ -238,6 +249,19 @@ td.error-cell { max-width: 280px; overflow: hidden; color: #ff9aa5; text-overflo
           <span data-i18n="dropHint">Choose a file or drop it here</span>
         </button>
       </div>
+      <div class="sidebar-links">
+        <p class="eyebrow" data-i18n="projectLinks">Project</p>
+        <a class="sidebar-link" href="https://github.com/AlexAdiaconitei/ping-tester" target="_blank" rel="noopener noreferrer" data-external="repository">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.35 1.09 2.92.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.84a9.6 9.6 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+          <span data-i18n="githubRepository">GitHub repository</span>
+          <span class="external-mark" aria-hidden="true">↗</span>
+        </a>
+        <a class="sidebar-link support" href="https://ko-fi.com/K3Q5236GOO" target="_blank" rel="noopener noreferrer" data-external="koFi">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 6.5h13v7a4.5 4.5 0 0 1-4.5 4.5h-4A4.5 4.5 0 0 1 4 13.5v-7Zm13 2h1.5a2.5 2.5 0 0 1 0 5H17M7.5 10.1c.8-1.1 2.3-.6 2.5.4.2-1 1.7-1.5 2.5-.4.9 1.3-.4 2.5-2.5 3.8-2.1-1.3-3.4-2.5-2.5-3.8Z"/></svg>
+          <span data-i18n="buyCoffee">Buy me a coffee</span>
+          <span class="external-mark" aria-hidden="true">↗</span>
+        </a>
+      </div>
     </aside>
 
     <main class="results">
@@ -297,7 +321,7 @@ const I18N = {
   en: {
     brandTag:'Connection recorder', signalPath:'Signal path', ready:'Ready for a new test', running:'Testing {targets}', stopping:'Stopping safely…', completed:'Test completed', stopped:'Test stopped', incomplete:'Test incomplete',
     configureEyebrow:'Test setup', newTest:'New test', setupHelp:'Choose the same inputs accepted by the PowerShell script.', duration:'Duration', wholeMinutes:'whole minutes', minUnit:'min', interval:'Interval', decimalsAllowed:'decimals allowed', secUnit:'sec', targets:'Targets', onePerLine:'one per line', startTest:'Start test', stop:'Stop',
-    externalEyebrow:'External result', openResult:'Open CSV or JSON', dropHint:'Choose a file or drop it here', emptyTitle:'Measure the path, not the guess', emptyCopy:'Start a test to watch latency and packet loss live, or open a saved CSV or JSON result.',
+    externalEyebrow:'External result', openResult:'Open CSV or JSON', dropHint:'Choose a file or drop it here', projectLinks:'Project', githubRepository:'GitHub repository', buyCoffee:'Buy me a coffee', emptyTitle:'Measure the path, not the guess', emptyCopy:'Start a test to watch latency and packet loss live, or open a saved CSV or JSON result.',
     liveMeasurement:'Live measurement', savedRun:'Saved run', externalFile:'External file', currentTest:'Current test', live:'Live', latencyTimeline:'Latency timeline', outagesByTarget:'Outages by target', pingSamples:'Ping samples',
     allTargets:'All targets', allStates:'All states', successful:'Successful', failed:'Failed', time:'Time', target:'Target', status:'Status', latency:'Latency', error:'Error', ok:'OK', fail:'Failed',
     samples:'Samples', packetLoss:'Packet loss', average:'Average', minimum:'Minimum', maximum:'Maximum', outages:'Outages', elapsed:'Elapsed',
@@ -312,7 +336,7 @@ const I18N = {
   es: {
     brandTag:'Registro de conexión', signalPath:'Ruta de señal', ready:'Lista para una nueva prueba', running:'Probando {targets}', stopping:'Deteniendo de forma segura…', completed:'Prueba completada', stopped:'Prueba detenida', incomplete:'Prueba incompleta',
     configureEyebrow:'Configuración', newTest:'Nueva prueba', setupHelp:'Elige los mismos parámetros que acepta el script de PowerShell.', duration:'Duración', wholeMinutes:'minutos enteros', minUnit:'min', interval:'Intervalo', decimalsAllowed:'admite decimales', secUnit:'s', targets:'Destinos', onePerLine:'uno por línea', startTest:'Iniciar prueba', stop:'Detener',
-    externalEyebrow:'Resultado externo', openResult:'Abrir CSV o JSON', dropHint:'Elige un fichero o arrástralo aquí', emptyTitle:'Mide la ruta, no la intuición', emptyCopy:'Inicia una prueba para observar latencia y pérdida en vivo, o abre un resultado CSV o JSON guardado.',
+    externalEyebrow:'Resultado externo', openResult:'Abrir CSV o JSON', dropHint:'Elige un fichero o arrástralo aquí', projectLinks:'Proyecto', githubRepository:'Repositorio en GitHub', buyCoffee:'Invítame a un café', emptyTitle:'Mide la ruta, no la intuición', emptyCopy:'Inicia una prueba para observar latencia y pérdida en vivo, o abre un resultado CSV o JSON guardado.',
     liveMeasurement:'Medición en vivo', savedRun:'Ejecución guardada', externalFile:'Fichero externo', currentTest:'Prueba actual', live:'En vivo', latencyTimeline:'Evolución de latencia', outagesByTarget:'Cortes por destino', pingSamples:'Muestras de ping',
     allTargets:'Todos los destinos', allStates:'Todos los estados', successful:'Correctos', failed:'Fallidos', time:'Hora', target:'Destino', status:'Estado', latency:'Latencia', error:'Error', ok:'OK', fail:'Fallo',
     samples:'Muestras', packetLoss:'Pérdida', average:'Media', minimum:'Mínima', maximum:'Máxima', outages:'Cortes', elapsed:'Transcurrido',
@@ -376,6 +400,7 @@ async function openExternal(file) { if(state.running){toast(t('busyHistory'),tru
 form.addEventListener('submit',event=>{event.preventDefault();try{const parameters=parseParameters();showDataset('live',t('currentTest'),[]);setRunning(true);host('start',parameters);}catch(error){validation.textContent=error.message;}});
 stopButton.addEventListener('click',()=>{if(!state.running||state.stopping)return;setRunning(true,true);host('stop');});
 document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.lang)));
+document.querySelectorAll('[data-external]').forEach(link=>link.addEventListener('click',event=>{if(window.chrome?.webview){event.preventDefault();host('openExternal',{destination:link.dataset.external});}}));
 fileDrop.addEventListener('click',()=>{if(!state.running)fileInput.click();});fileInput.addEventListener('change',()=>{if(fileInput.files[0])openExternal(fileInput.files[0]);fileInput.value='';});
 for(const eventName of ['dragenter','dragover'])fileDrop.addEventListener(eventName,event=>{event.preventDefault();if(!state.running)fileDrop.classList.add('over');});for(const eventName of ['dragleave','drop'])fileDrop.addEventListener(eventName,event=>{event.preventDefault();fileDrop.classList.remove('over');});fileDrop.addEventListener('drop',event=>{if(event.dataTransfer.files[0])openExternal(event.dataTransfer.files[0]);});
 $('openFolder').addEventListener('click',()=>host('openResults'));$('tableTarget').addEventListener('change',event=>{state.tableTarget=event.target.value;state.page=1;renderTable();});$('tableStatus').addEventListener('change',event=>{state.tableStatus=event.target.value;state.page=1;renderTable();});$('prevPage').addEventListener('click',()=>{state.page--;renderTable();});$('nextPage').addEventListener('click',()=>{state.page++;renderTable();});

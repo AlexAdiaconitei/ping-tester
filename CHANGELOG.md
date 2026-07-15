@@ -4,7 +4,7 @@ This file keeps Ping Tester's permanent change history. Each version must remain
 
 Before publishing a version, move the entries under **Unreleased** to a section named using the format `## [1.2.3] - YYYY-MM-DD`, then leave the **Unreleased** section empty again.
 
-## [Unreleased]
+## 1.0.0
 
 ### Added
 
@@ -15,6 +15,7 @@ Before publishing a version, move the entries under **Unreleased** to a section 
 - External CSV and JSON result viewing without modifying the original files.
 - English and Spanish interfaces.
 - Manual GitHub Actions workflow for building and publishing versioned releases.
+- GitHub repository and Ko-fi links in the left sidebar with English and Spanish labels.
 
 ### Changed
 

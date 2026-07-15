@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -129,6 +130,17 @@ internal sealed class MainForm : Form
 
                 case "openResults":
                     _storage.OpenResultsDirectory();
+                    break;
+
+                case "openExternal":
+                    var destination = RequiredString(payload, "destination");
+                    var url = destination switch
+                    {
+                        "repository" => "https://github.com/AlexAdiaconitei/ping-tester",
+                        "koFi" => "https://ko-fi.com/K3Q5236GOO",
+                        _ => throw new ArgumentException("Unknown external link destination.")
+                    };
+                    Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
                     break;
 
                 case "setLanguage":
