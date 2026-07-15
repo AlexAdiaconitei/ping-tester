@@ -1,10 +1,10 @@
-name: Publicar release
+name: Publish release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Versión SemVer sin prefijo v (por ejemplo, 1.2.3 o 1.2.3-beta.1)
+        description: SemVer version without the v prefix (for example, 1.2.3 or 1.2.3-beta.1)
         required: true
         type: string
 
@@ -17,20 +17,20 @@ concurrency:
 
 jobs:
   release:
-    name: Compilar y publicar
+    name: Build and publish
     runs-on: windows-latest
     timeout-minutes: 20
 
     steps:
-      - name: Descargar el repositorio
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Configurar .NET
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      - name: Validar la versión
+      - name: Validate version
         id: release
         shell: pwsh
         env:
@@ -43,14 +43,14 @@ jobs:
           )
 
           if (-not $match.Success) {
-            throw "La versión '$version' no es SemVer válida. Usa un valor como 1.2.3 o 1.2.3-beta.1, sin el prefijo v."
+            throw "Version '$version' is not valid SemVer. Use a value such as 1.2.3 or 1.2.3-beta.1 without the v prefix."
           }
 
           $numericParts = @($match.Groups[1].Value, $match.Groups[2].Value, $match.Groups[3].Value)
           foreach ($part in $numericParts) {
             $parsedPart = 0
             if (-not [int]::TryParse($part, [ref]$parsedPart) -or $parsedPart -gt 65534) {
-              throw "Cada componente numérico debe estar entre 0 y 65534 para poder incluirlo en el ejecutable."
+              throw "Each numeric version component must be between 0 and 65534 so it can be included in the executable."
             }
           }
 
@@ -60,7 +60,7 @@ jobs:
           "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
           "asset_name=PingTester-v$version-win-x64.exe" >> $env:GITHUB_OUTPUT
 
-      - name: Compilar el ejecutable versionado
+      - name: Build versioned executable
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
@@ -78,22 +78,22 @@ jobs:
             /p:IncludeSourceRevisionInInformationalVersion=false
 
           if ($LASTEXITCODE -ne 0) {
-            throw "dotnet publish terminó con el código $LASTEXITCODE."
+            throw "dotnet publish exited with code $LASTEXITCODE."
           }
 
           $executable = Get-Item dist/PingTester.exe
           $versionInfo = $executable.VersionInfo
           if ($versionInfo.FileVersion -ne $env:FILE_VERSION) {
-            throw "El ejecutable contiene FileVersion '$($versionInfo.FileVersion)' en vez de '$env:FILE_VERSION'."
+            throw "The executable contains FileVersion '$($versionInfo.FileVersion)' instead of '$env:FILE_VERSION'."
           }
           if ($versionInfo.ProductVersion -ne $env:RELEASE_VERSION) {
-            throw "El ejecutable contiene ProductVersion '$($versionInfo.ProductVersion)' en vez de '$env:RELEASE_VERSION'."
+            throw "The executable contains ProductVersion '$($versionInfo.ProductVersion)' instead of '$env:RELEASE_VERSION'."
           }
 
           New-Item -ItemType Directory -Path release -Force | Out-Null
           Copy-Item $executable.FullName "release/$env:ASSET_NAME"
 
-      - name: Publicar la release en GitHub
+      - name: Publish GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -116,5 +116,5 @@ jobs:
 
           gh @arguments
           if ($LASTEXITCODE -ne 0) {
-            throw "No se pudo crear la release de GitHub. Revisa el error anterior y comprueba que la release no exista."
+            throw "GitHub release creation failed. Review the preceding error and confirm that the release does not already exist."
           }

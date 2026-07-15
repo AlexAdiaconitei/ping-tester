@@ -88,7 +88,7 @@ The publish configuration is self-contained and single-file. Users do not need t
 1. Move the entries under **Unreleased** in [`CHANGELOG.md`](CHANGELOG.md) to a versioned section with its release date.
 2. Replace the contents of [`RELEASE-NOTES.md`](RELEASE-NOTES.md) with the public notes for the new version.
 3. Commit and push both files and all release changes.
-4. Open **Actions → Publicar release → Run workflow**, enter a SemVer version without the `v` prefix, and run it.
+4. Open **Actions → Publish release → Run workflow**, enter a SemVer version without the `v` prefix, and run it.
 
 The workflow validates the version, builds the self-contained Windows x64 executable with that version in its metadata, creates the `v<version>` tag and GitHub release, copies `RELEASE-NOTES.md` verbatim into the release description, and uploads `PingTester-v<version>-win-x64.exe`. GitHub rejects the publication if a release with the same tag already exists.
 
