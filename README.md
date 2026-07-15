@@ -83,20 +83,34 @@ dist\PingTester.exe
 
 The publish configuration is self-contained and single-file. Users do not need the .NET runtime, source files, PowerShell script, HTML interface, or additional DLLs beside the executable.
 
+## Publishing a release
+
+1. Move the entries under **Unreleased** in [`CHANGELOG.md`](CHANGELOG.md) to a versioned section with its release date.
+2. Replace the contents of [`RELEASE-NOTES.md`](RELEASE-NOTES.md) with the public notes for the new version.
+3. Commit and push both files and all release changes.
+4. Open **Actions → Publicar release → Run workflow**, enter a SemVer version without the `v` prefix, and run it.
+
+The workflow validates the version, builds the self-contained Windows x64 executable with that version in its metadata, creates the `v<version>` tag and GitHub release, copies `RELEASE-NOTES.md` verbatim into the release description, and uploads `PingTester-v<version>-win-x64.exe`. GitHub rejects the publication if a release with the same tag already exists.
+
 ## Project structure
 
 ```text
 .
+├── .github/workflows/    # Manual GitHub release workflow
 ├── .old/                 # Original standalone PowerShell script and HTML viewer
 ├── assets/               # README assets
 ├── src/                  # C# host, embedded web UI, and application icon
+│   ├── Resources/
+│   │   └── ping_test.ps1 # Maintained PowerShell runner embedded in the app
 │   └── PingTester.csproj
 ├── dist/                 # Generated portable executable
+├── CHANGELOG.md          # Permanent release history
+├── RELEASE-NOTES.md      # Notes copied into the next GitHub release
 ├── LICENSE
 └── README.md
 ```
 
-The original script in `.old/ping_test.ps1` is embedded during the build and remains unchanged. It can still be used independently with `.old/visor_ping.html`.
+The files under `.old/` are the untouched legacy PowerShell script and HTML viewer. They are preserved for reference and are never used as build inputs. The maintained script is `src/Resources/ping_test.ps1`, which is embedded in the application.
 
 ## About Me
 

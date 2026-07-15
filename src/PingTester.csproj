@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
     <EmbeddedResource Include="app.html" LogicalName="PingTester.Resources.app.html" />
     <EmbeddedResource Include="app-icon.ico" LogicalName="PingTester.Resources.app-icon.ico" />
-    <EmbeddedResource Include="..\.old\ping_test.ps1" Link="Resources\ping_test.ps1" LogicalName="PingTester.Resources.ping_test.ps1" />
+    <EmbeddedResource Include="Resources\ping_test.ps1" LogicalName="PingTester.Resources.ping_test.ps1" />
   </ItemGroup>
 
   <Target Name="RemoveUnusedWebView2WpfReference" BeforeTargets="ResolveAssemblyReferences">

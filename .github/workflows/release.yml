@@ -1,0 +1,120 @@
+name: Publicar release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Versión SemVer sin prefijo v (por ejemplo, 1.2.3 o 1.2.3-beta.1)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Compilar y publicar
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Validar la versión
+        id: release
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $version = $env:RELEASE_VERSION.Trim()
+          $match = [regex]::Match(
+            $version,
+            '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$'
+          )
+
+          if (-not $match.Success) {
+            throw "La versión '$version' no es SemVer válida. Usa un valor como 1.2.3 o 1.2.3-beta.1, sin el prefijo v."
+          }
+
+          $numericParts = @($match.Groups[1].Value, $match.Groups[2].Value, $match.Groups[3].Value)
+          foreach ($part in $numericParts) {
+            $parsedPart = 0
+            if (-not [int]::TryParse($part, [ref]$parsedPart) -or $parsedPart -gt 65534) {
+              throw "Cada componente numérico debe estar entre 0 y 65534 para poder incluirlo en el ejecutable."
+            }
+          }
+
+          $fileVersion = "$($numericParts[0]).$($numericParts[1]).$($numericParts[2]).0"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+          "file_version=$fileVersion" >> $env:GITHUB_OUTPUT
+          "asset_name=PingTester-v$version-win-x64.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Compilar el ejecutable versionado
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          FILE_VERSION: ${{ steps.release.outputs.file_version }}
+          ASSET_NAME: ${{ steps.release.outputs.asset_name }}
+        run: |
+          dotnet publish src/PingTester.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --output dist `
+            /p:Version="$env:RELEASE_VERSION" `
+            /p:AssemblyVersion="$env:FILE_VERSION" `
+            /p:FileVersion="$env:FILE_VERSION" `
+            /p:InformationalVersion="$env:RELEASE_VERSION" `
+            /p:IncludeSourceRevisionInInformationalVersion=false
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "dotnet publish terminó con el código $LASTEXITCODE."
+          }
+
+          $executable = Get-Item dist/PingTester.exe
+          $versionInfo = $executable.VersionInfo
+          if ($versionInfo.FileVersion -ne $env:FILE_VERSION) {
+            throw "El ejecutable contiene FileVersion '$($versionInfo.FileVersion)' en vez de '$env:FILE_VERSION'."
+          }
+          if ($versionInfo.ProductVersion -ne $env:RELEASE_VERSION) {
+            throw "El ejecutable contiene ProductVersion '$($versionInfo.ProductVersion)' en vez de '$env:RELEASE_VERSION'."
+          }
+
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          Copy-Item $executable.FullName "release/$env:ASSET_NAME"
+
+      - name: Publicar la release en GitHub
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          ASSET_NAME: ${{ steps.release.outputs.asset_name }}
+        run: |
+          $arguments = @(
+            'release', 'create', $env:RELEASE_TAG,
+            "release/$env:ASSET_NAME",
+            '--repo', $env:GITHUB_REPOSITORY,
+            '--target', $env:GITHUB_SHA,
+            '--title', "Ping Tester v$env:RELEASE_VERSION",
+            '--notes-file', 'RELEASE-NOTES.md'
+          )
+
+          if ($env:RELEASE_VERSION.Contains('-')) {
+            $arguments += '--prerelease'
+          }
+
+          gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo crear la release de GitHub. Revisa el error anterior y comprueba que la release no exista."
+          }
