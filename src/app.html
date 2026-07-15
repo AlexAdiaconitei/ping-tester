@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ping Tester</title>
+<style>
+:root {
+  color-scheme: dark;
+  --ink: #08111b;
+  --panel: #101c29;
+  --panel-2: #142231;
+  --line: #26384b;
+  --line-hot: #3b5872;
+  --text: #edf5fb;
+  --muted: #8da2b5;
+  --blue: #58adff;
+  --cyan: #4fe0c1;
+  --coral: #ff7180;
+  --amber: #ffc66d;
+  --shadow: 0 22px 60px rgba(0, 0, 0, .28);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(88,173,255,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(88,173,255,.028) 1px, transparent 1px),
+    radial-gradient(circle at 58% -10%, rgba(48,117,167,.16), transparent 34%),
+    var(--ink);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+  color: var(--text);
+  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+button, input, textarea, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+button:disabled, input:disabled, textarea:disabled, select:disabled { opacity: .48; cursor: not-allowed; }
+.app { height: 100%; display: grid; grid-template-rows: 74px minmax(0, 1fr); }
+.mast {
+  position: relative;
+  display: grid;
+  grid-template-columns: 286px minmax(300px, 1fr) auto;
+  align-items: center;
+  gap: 26px;
+  padding: 0 22px;
+  background: rgba(10, 19, 29, .93);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+  z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-mark { width: 36px; height: 36px; flex: none; filter: drop-shadow(0 0 13px rgba(79,224,193,.18)); }
+.brand strong {
+  display: block;
+  font-family: Bahnschrift, "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 620;
+  letter-spacing: .04em;
+}
+.brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.trace-status { min-width: 0; }
+.trace-copy { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 7px; color: var(--muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+.trace-copy strong { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trace-rail { position: relative; height: 2px; background: var(--line); overflow: visible; }
+.trace-rail::before, .trace-rail::after { content: ""; position: absolute; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--line-hot); }
+.trace-rail::before { left: 0; } .trace-rail::after { right: 0; }
+.trace-pulse { position: absolute; z-index: 1; top: -4px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 4px rgba(79,224,193,.12), 0 0 18px var(--cyan); opacity: 0; }
+.running .trace-rail { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.running .trace-pulse { opacity: 1; animation: travel 2.3s cubic-bezier(.4,0,.2,1) infinite; }
+.stopping .trace-pulse { background: var(--amber); box-shadow: 0 0 0 4px rgba(255,198,109,.12), 0 0 18px var(--amber); }
+@keyframes travel { 0% { left: 0; transform: scale(.72); } 48% { transform: scale(1); } 100% { left: calc(100% - 10px); transform: scale(.72); } }
+.language { display: flex; padding: 3px; border: 1px solid var(--line); background: #0c1722; }
+.language button { border: 0; padding: 6px 10px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+.language button.active { color: var(--ink); background: var(--text); font-weight: 700; }
+.workspace { min-height: 0; display: grid; grid-template-columns: 286px minmax(480px, 1fr) 284px; }
+.sidebar, .history { min-height: 0; overflow-y: auto; background: rgba(11,21,32,.9); }
+.sidebar { border-right: 1px solid var(--line); padding: 20px; }
+.history { border-left: 1px solid var(--line); padding: 20px 16px; }
+.results { min-width: 0; min-height: 0; overflow-y: auto; padding: 24px; scroll-behavior: smooth; }
+.eyebrow { margin: 0 0 7px; color: var(--blue); font-family: Consolas, monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+h1, h2, h3, p { margin-top: 0; }
+h2 { margin-bottom: 6px; font-family: Bahnschrift, "Segoe UI", sans-serif; font-size: 18px; font-weight: 590; letter-spacing: .015em; }
+.section-copy { margin-bottom: 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.field { display: block; margin-bottom: 16px; }
+.field > span { display: flex; justify-content: space-between; margin-bottom: 7px; color: #c8d6e1; font-size: 12px; }
+.field em { color: var(--muted); font-style: normal; }
+.field input, .field textarea, .filter-select {
+  width: 100%; border: 1px solid var(--line); border-radius: 3px; background: #0a1520; color: var(--text); padding: 10px 11px;
+}
+.field input:hover, .field textarea:hover, .filter-select:hover { border-color: var(--line-hot); }
+.field textarea { min-height: 116px; resize: vertical; line-height: 1.55; font-family: Consolas, monospace; font-size: 13px; }
+.unit-input { position: relative; }
+.unit-input input { padding-right: 58px; }
+.unit-input b { position: absolute; right: 10px; top: 10px; color: var(--muted); font-size: 11px; font-weight: 500; pointer-events: none; }
+.validation { min-height: 18px; margin: -4px 0 10px; color: var(--coral); font-size: 11px; }
+.actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.btn { border: 1px solid var(--line); border-radius: 3px; padding: 10px 13px; background: var(--panel-2); cursor: pointer; transition: border-color .14s, background .14s, transform .14s; }
+.btn:hover:not(:disabled) { border-color: var(--line-hot); background: #192b3d; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.primary { border-color: #3f9dec; background: var(--blue); color: #05101a; font-weight: 750; }
+.btn.primary:hover:not(:disabled) { background: #76bbff; }
+.btn.danger { border-color: rgba(255,113,128,.46); background: rgba(255,113,128,.09); color: #ff9aa5; }
+.file-zone { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.file-zone input { display: none; }
+.file-drop { display: block; width: 100%; border: 1px dashed var(--line-hot); border-radius: 3px; padding: 13px; background: rgba(88,173,255,.035); color: var(--muted); text-align: left; cursor: pointer; }
+.file-drop strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 12px; }
+.file-drop.over { border-color: var(--blue); background: rgba(88,173,255,.1); }
+.file-drop.disabled { opacity: .45; pointer-events: none; }
+.empty { min-height: calc(100vh - 123px); display: grid; place-items: center; text-align: center; }
+.empty-inner { max-width: 470px; }
+.empty-diagram { width: 190px; height: 72px; margin: 0 auto 24px; color: var(--line-hot); }
+.empty h2 { font-size: 23px; }
+.empty p { color: var(--muted); line-height: 1.6; }
+.dashboard[hidden], .empty[hidden] { display: none; }
+.dataset-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.dataset-title { min-width: 0; }
+.dataset-title h2 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dataset-title p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.live-badge { flex: none; display: inline-flex; gap: 7px; align-items: center; border: 1px solid rgba(79,224,193,.3); padding: 6px 9px; color: var(--cyan); font: 11px Consolas, monospace; text-transform: uppercase; }
+.live-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+.metrics { display: grid; grid-template-columns: repeat(7, minmax(96px, 1fr)); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
+.metric { min-width: 0; padding: 13px 14px 14px; border-top: 2px solid transparent; border-right: 1px solid var(--line); }
+.metric:last-child { border-right: 0; }
+.metric.good { border-top-color: var(--cyan); } .metric.bad { border-top-color: var(--coral); }
+.metric span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metric strong { display: block; font: 600 19px Bahnschrift, "Segoe UI", sans-serif; white-space: nowrap; }
+.panel { margin-top: 16px; border: 1px solid var(--line); background: rgba(16,28,41,.93); box-shadow: var(--shadow); }
+.panel-head { min-height: 51px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.panel-head h3 { margin: 0; font-size: 13px; font-weight: 650; }
+.panel-tools { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.target-filter { border: 1px solid var(--line); border-radius: 2px; padding: 5px 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; }
+.target-filter.active { border-color: var(--target-color, var(--blue)); color: var(--text); box-shadow: inset 0 -2px var(--target-color, var(--blue)); }
+.chart-box { position: relative; height: 310px; padding: 12px 12px 8px; }
+#chart { width: 100%; height: 100%; display: block; }
+.chart-tip { position: absolute; z-index: 3; display: none; pointer-events: none; min-width: 150px; border: 1px solid var(--line-hot); padding: 8px 10px; background: rgba(6,14,22,.96); box-shadow: var(--shadow); font-size: 11px; line-height: 1.55; }
+.chart-tip strong { color: var(--text); } .chart-tip .ok { color: var(--cyan); } .chart-tip .fail { color: var(--coral); }
+.outage-list { max-height: 220px; overflow: auto; }
+.outage-row { display: grid; grid-template-columns: minmax(100px, .9fr) 1.2fr 1.2fr .75fr .6fr; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid rgba(38,56,75,.72); font-size: 12px; }
+.outage-row:last-child { border-bottom: 0; }
+.outage-row.head { position: sticky; top: 0; z-index: 1; background: var(--panel-2); color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.outage-row .target { font-family: Consolas, monospace; color: var(--coral); }
+.no-outages { padding: 18px 14px; color: var(--muted); font-size: 12px; }
+.table-filters { display: grid; grid-template-columns: 150px 130px; gap: 8px; }
+.filter-select { padding: 6px 8px; font-size: 11px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { padding: 9px 12px; background: var(--panel-2); color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+td { padding: 8px 12px; border-top: 1px solid rgba(38,56,75,.68); white-space: nowrap; }
+td.error-cell { max-width: 280px; overflow: hidden; color: #ff9aa5; text-overflow: ellipsis; }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-pill.ok { color: var(--cyan); } .status-pill.fail { color: var(--coral); }
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.pagination div { display: flex; gap: 6px; }
+.pagination button { min-width: 30px; border: 1px solid var(--line); border-radius: 2px; padding: 5px 8px; background: #0a1520; cursor: pointer; }
+.history-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.history-head h2 { margin: 0; font-size: 16px; }
+.icon-btn { width: 31px; height: 31px; display: grid; place-items: center; flex: none; border: 1px solid var(--line); border-radius: 2px; background: transparent; color: var(--muted); cursor: pointer; }
+.icon-btn:hover:not(:disabled) { color: var(--text); border-color: var(--line-hot); }
+.history-list { display: grid; gap: 8px; }
+.history-empty { padding: 24px 9px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
+.history-item { position: relative; width: 100%; border: 1px solid var(--line); border-radius: 3px; padding: 11px 36px 11px 11px; background: rgba(16,28,41,.72); color: inherit; text-align: left; cursor: pointer; }
+.history-item:hover:not(:disabled) { border-color: var(--line-hot); background: var(--panel-2); }
+.history-item.active { border-color: var(--blue); box-shadow: inset 2px 0 var(--blue); }
+.history-item time { display: block; margin-bottom: 7px; font: 12px Consolas, monospace; color: var(--text); }
+.history-meta { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.run-state { display: inline-flex; align-items: center; gap: 5px; }
+.run-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); }
+.run-state.stopped::before { background: var(--amber); } .run-state.incomplete::before { background: var(--coral); }
+.delete-run { position: absolute; right: 7px; top: 8px; width: 25px; height: 25px; display: grid; place-items: center; border: 0; background: transparent; color: #71889b; cursor: pointer; }
+.delete-run:hover:not(:disabled) { color: var(--coral); }
+.toast { position: fixed; z-index: 30; right: 18px; bottom: 18px; max-width: 430px; border: 1px solid var(--line-hot); border-left: 3px solid var(--blue); padding: 11px 14px; background: #0b1722; box-shadow: var(--shadow); transform: translateY(16px); opacity: 0; pointer-events: none; transition: .18s; }
+.toast.show { transform: translateY(0); opacity: 1; } .toast.error { border-left-color: var(--coral); }
+@media (max-width: 1220px) {
+  .workspace { grid-template-columns: 272px minmax(440px, 1fr) 250px; }
+  .metrics { grid-template-columns: repeat(4, 1fr); }
+  .metric:nth-child(4) { border-right: 0; } .metric:nth-child(-n+4) { border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 1020px) {
+  body { overflow: auto; }
+  .app { height: auto; min-height: 100%; }
+  .mast { grid-template-columns: 250px 1fr auto; }
+  .workspace { grid-template-columns: 265px minmax(0, 1fr); }
+  .history { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .history-list { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .results, .sidebar { overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="mast">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M8 28h7l4-12 7 22 5-16 3 6h6" fill="none" stroke="#58adff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="28" r="3" fill="#4fe0c1"/><circle cx="40" cy="28" r="3" fill="#4fe0c1"/>
+      </svg>
+      <div><strong>Ping Tester</strong><small data-i18n="brandTag">Connection recorder</small></div>
+    </div>
+    <div class="trace-status">
+      <div class="trace-copy"><span data-i18n="signalPath">Signal path</span><strong id="mastStatus">Ready for a new test</strong></div>
+      <div class="trace-rail"><i class="trace-pulse"></i></div>
+    </div>
+    <div class="language" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="active">EN</button><button type="button" data-lang="es">ES</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <p class="eyebrow" data-i18n="configureEyebrow">Test setup</p>
+      <h2 data-i18n="newTest">New test</h2>
+      <p class="section-copy" data-i18n="setupHelp">Choose the same inputs accepted by the PowerShell script.</p>
+      <form id="runForm" novalidate>
+        <label class="field"><span><b data-i18n="duration">Duration</b><em data-i18n="wholeMinutes">whole minutes</em></span><div class="unit-input"><input id="duration" type="number" min="1" step="1" value="30"><b data-i18n="minUnit">min</b></div></label>
+        <label class="field"><span><b data-i18n="interval">Interval</b><em data-i18n="decimalsAllowed">decimals allowed</em></span><div class="unit-input"><input id="interval" inputmode="decimal" value="1"><b data-i18n="secUnit">sec</b></div></label>
+        <label class="field"><span><b data-i18n="targets">Targets</b><em data-i18n="onePerLine">one per line</em></span><textarea id="targets" spellcheck="false">1.1.1.1&#10;8.8.8.8</textarea></label>
+        <div class="validation" id="validation" role="alert"></div>
+        <div class="actions">
+          <button class="btn primary" id="startButton" type="submit" data-i18n="startTest">Start test</button>
+          <button class="btn danger" id="stopButton" type="button" disabled data-i18n="stop">Stop</button>
+        </div>
+      </form>
+      <div class="file-zone">
+        <p class="eyebrow" data-i18n="externalEyebrow">External result</p>
+        <input id="fileInput" type="file" accept=".csv,.json">
+        <button type="button" class="file-drop" id="fileDrop">
+          <strong data-i18n="openResult">Open CSV or JSON</strong>
+          <span data-i18n="dropHint">Choose a file or drop it here</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="results">
+      <section class="empty" id="emptyState">
+        <div class="empty-inner">
+          <svg class="empty-diagram" viewBox="0 0 190 72" aria-hidden="true">
+            <path d="M9 37h38l10-21 18 43 18-35 15 27 12-14h61" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="9" cy="37" r="4" fill="#4fe0c1"/><circle cx="181" cy="37" r="4" fill="#58adff"/>
+          </svg>
+          <h2 data-i18n="emptyTitle">Measure the path, not the guess</h2>
+          <p data-i18n="emptyCopy">Start a test to watch latency and packet loss live, or open a saved CSV or JSON result.</p>
+        </div>
+      </section>
+
+      <section class="dashboard" id="dashboard" hidden>
+        <div class="dataset-head">
+          <div class="dataset-title"><p class="eyebrow" id="sourceEyebrow">Live measurement</p><h2 id="datasetName">Current test</h2><p id="datasetDetail"></p></div>
+          <div class="live-badge" id="liveBadge" hidden><i></i><span data-i18n="live">Live</span></div>
+        </div>
+        <div class="metrics" id="metrics"></div>
+
+        <section class="panel">
+          <div class="panel-head"><h3 data-i18n="latencyTimeline">Latency timeline</h3><div class="panel-tools" id="chartTargets"></div></div>
+          <div class="chart-box" id="chartBox"><canvas id="chart"></canvas><div class="chart-tip" id="chartTip"></div></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h3 data-i18n="outagesByTarget">Outages by target</h3><span id="outageCount" class="eyebrow"></span></div>
+          <div class="outage-list" id="outageList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3 data-i18n="pingSamples">Ping samples</h3>
+            <div class="table-filters">
+              <select class="filter-select" id="tableTarget" aria-label="Target filter"></select>
+              <select class="filter-select" id="tableStatus" aria-label="Status filter"><option value="all" data-i18n="allStates">All states</option><option value="ok" data-i18n="successful">Successful</option><option value="fail" data-i18n="failed">Failed</option></select>
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th data-i18n="time">Time</th><th data-i18n="target">Target</th><th data-i18n="status">Status</th><th data-i18n="latency">Latency</th><th data-i18n="error">Error</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
+          <div class="pagination"><span id="pageSummary"></span><div><button id="prevPage" type="button" aria-label="Previous page">←</button><button id="nextPage" type="button" aria-label="Next page">→</button></div></div>
+        </section>
+      </section>
+    </main>
+
+    <aside class="history">
+      <div class="history-head"><div><p class="eyebrow" data-i18n="archiveEyebrow">Local archive</p><h2 data-i18n="history">History</h2></div><button class="icon-btn" id="openFolder" type="button" title="Open results folder" aria-label="Open results folder">↗</button></div>
+      <div class="history-list" id="historyList"></div>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+const I18N = {
+  en: {
+    brandTag:'Connection recorder', signalPath:'Signal path', ready:'Ready for a new test', running:'Testing {targets}', stopping:'Stopping safely…', completed:'Test completed', stopped:'Test stopped', incomplete:'Test incomplete',
+    configureEyebrow:'Test setup', newTest:'New test', setupHelp:'Choose the same inputs accepted by the PowerShell script.', duration:'Duration', wholeMinutes:'whole minutes', minUnit:'min', interval:'Interval', decimalsAllowed:'decimals allowed', secUnit:'sec', targets:'Targets', onePerLine:'one per line', startTest:'Start test', stop:'Stop',
+    externalEyebrow:'External result', openResult:'Open CSV or JSON', dropHint:'Choose a file or drop it here', emptyTitle:'Measure the path, not the guess', emptyCopy:'Start a test to watch latency and packet loss live, or open a saved CSV or JSON result.',
+    liveMeasurement:'Live measurement', savedRun:'Saved run', externalFile:'External file', currentTest:'Current test', live:'Live', latencyTimeline:'Latency timeline', outagesByTarget:'Outages by target', pingSamples:'Ping samples',
+    allTargets:'All targets', allStates:'All states', successful:'Successful', failed:'Failed', time:'Time', target:'Target', status:'Status', latency:'Latency', error:'Error', ok:'OK', fail:'Failed',
+    samples:'Samples', packetLoss:'Packet loss', average:'Average', minimum:'Minimum', maximum:'Maximum', outages:'Outages', elapsed:'Elapsed',
+    noOutages:'No outage has reached two consecutive failures for the same target.', outageTarget:'Target', outageStart:'Start', outageEnd:'Last failure', outageDuration:'Duration', failedPings:'Failed pings',
+    page:'Page {page} of {pages}', rows:'{from}–{to} of {total}', archiveEyebrow:'Local archive', history:'History', historyEmpty:'No local tests yet. Completed and recoverable runs will appear here.', openFolder:'Open results folder',
+    stateCompleted:'Completed', stateStopped:'Stopped', stateIncomplete:'Incomplete', deleteRun:'Delete run', confirmDelete:'Move this run’s CSV and JSON files to the Recycle Bin?',
+    validationDuration:'Enter a positive whole number of minutes.', validationInterval:'Enter a positive interval in seconds.', validationTargets:'Enter at least one target, one per line.', validationTargetWhitespace:'Targets cannot contain spaces.',
+    fileType:'Choose a CSV or JSON file.', fileRead:'This result file could not be read.', emptyFile:'The file contains no valid ping samples.', busyHistory:'Finish or stop the current test before opening history.',
+    operationFailed:'The operation could not be completed.', unknownAction:'The application received an unknown command.', testFailed:'The test ended before producing complete results.', noResponse:'No response / timeout', statusCode:'Status code {code}',
+    loadedSamples:'{count} samples · {targets} targets', justNow:'just now', durationSeconds:'{value}s', durationMinutes:'{value}m {seconds}s'
+  },
+  es: {
+    brandTag:'Registro de conexión', signalPath:'Ruta de señal', ready:'Lista para una nueva prueba', running:'Probando {targets}', stopping:'Deteniendo de forma segura…', completed:'Prueba completada', stopped:'Prueba detenida', incomplete:'Prueba incompleta',
+    configureEyebrow:'Configuración', newTest:'Nueva prueba', setupHelp:'Elige los mismos parámetros que acepta el script de PowerShell.', duration:'Duración', wholeMinutes:'minutos enteros', minUnit:'min', interval:'Intervalo', decimalsAllowed:'admite decimales', secUnit:'s', targets:'Destinos', onePerLine:'uno por línea', startTest:'Iniciar prueba', stop:'Detener',
+    externalEyebrow:'Resultado externo', openResult:'Abrir CSV o JSON', dropHint:'Elige un fichero o arrástralo aquí', emptyTitle:'Mide la ruta, no la intuición', emptyCopy:'Inicia una prueba para observar latencia y pérdida en vivo, o abre un resultado CSV o JSON guardado.',
+    liveMeasurement:'Medición en vivo', savedRun:'Ejecución guardada', externalFile:'Fichero externo', currentTest:'Prueba actual', live:'En vivo', latencyTimeline:'Evolución de latencia', outagesByTarget:'Cortes por destino', pingSamples:'Muestras de ping',
+    allTargets:'Todos los destinos', allStates:'Todos los estados', successful:'Correctos', failed:'Fallidos', time:'Hora', target:'Destino', status:'Estado', latency:'Latencia', error:'Error', ok:'OK', fail:'Fallo',
+    samples:'Muestras', packetLoss:'Pérdida', average:'Media', minimum:'Mínima', maximum:'Máxima', outages:'Cortes', elapsed:'Transcurrido',
+    noOutages:'Ningún corte ha alcanzado dos fallos consecutivos para el mismo destino.', outageTarget:'Destino', outageStart:'Inicio', outageEnd:'Último fallo', outageDuration:'Duración', failedPings:'Pings fallidos',
+    page:'Página {page} de {pages}', rows:'{from}–{to} de {total}', archiveEyebrow:'Archivo local', history:'Histórico', historyEmpty:'Todavía no hay pruebas locales. Aquí aparecerán las ejecuciones completadas y recuperables.', openFolder:'Abrir carpeta de resultados',
+    stateCompleted:'Completada', stateStopped:'Detenida', stateIncomplete:'Incompleta', deleteRun:'Eliminar ejecución', confirmDelete:'¿Mover los CSV y JSON de esta ejecución a la Papelera?',
+    validationDuration:'Introduce un número entero positivo de minutos.', validationInterval:'Introduce un intervalo positivo en segundos.', validationTargets:'Introduce al menos un destino, uno por línea.', validationTargetWhitespace:'Los destinos no pueden contener espacios.',
+    fileType:'Elige un fichero CSV o JSON.', fileRead:'No se pudo leer este fichero de resultados.', emptyFile:'El fichero no contiene muestras de ping válidas.', busyHistory:'Termina o detén la prueba actual antes de abrir el histórico.',
+    operationFailed:'No se pudo completar la operación.', unknownAction:'La aplicación recibió una orden desconocida.', testFailed:'La prueba terminó sin producir resultados completos.', noResponse:'Sin respuesta / timeout', statusCode:'Código de estado {code}',
+    loadedSamples:'{count} muestras · {targets} destinos', justNow:'ahora', durationSeconds:'{value}s', durationMinutes:'{value}min {seconds}s'
+  }
+};
+const palette = ['#58adff','#ffc66d','#b890ff','#4fe0c1','#ff8fb7','#7dd7ff','#a8d36d','#ff9d66'];
+const state = { lang:'en', running:false, stopping:false, records:[], history:[], source:null, sourceId:null, sourceName:'', chartTargets:new Set(), knownChartTargets:new Set(), tableTarget:'all', tableStatus:'all', page:1, pageSize:100 };
+const $ = id => document.getElementById(id);
+const app = $('app'), form = $('runForm'), durationInput = $('duration'), intervalInput = $('interval'), targetsInput = $('targets'), validation = $('validation');
+const startButton = $('startButton'), stopButton = $('stopButton'), fileDrop = $('fileDrop'), fileInput = $('fileInput'), dashboard = $('dashboard'), emptyState = $('emptyState');
+const chart = $('chart'), chartBox = $('chartBox'), chartTip = $('chartTip');
+let chartPoints = [], renderQueued = false, toastTimer;
+function t(key, vars={}) { let value = I18N[state.lang][key] ?? I18N.en[key] ?? key; for (const [name,replacement] of Object.entries(vars)) value = value.replaceAll(`{${name}}`, replacement); return value; }
+function locale() { return state.lang === 'es' ? 'es-ES' : 'en-US'; }
+function host(action, payload={}) { if (window.chrome?.webview) window.chrome.webview.postMessage({action,payload}); }
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
+function formatDate(value, includeDate=true) { const date = value instanceof Date ? value : new Date(value); if (Number.isNaN(date.getTime())) return '—'; return new Intl.DateTimeFormat(locale(), includeDate ? {dateStyle:'short',timeStyle:'medium'} : {timeStyle:'medium'}).format(date); }
+function formatNumber(value, digits=0) { return new Intl.NumberFormat(locale(), {minimumFractionDigits:digits,maximumFractionDigits:digits}).format(value); }
+function formatDuration(ms) { const seconds = Math.max(0, Math.round(ms/1000)); if (seconds < 60) return t('durationSeconds',{value:formatNumber(seconds)}); return t('durationMinutes',{value:formatNumber(Math.floor(seconds/60)),seconds:formatNumber(seconds%60)}); }
+function localizedError(message) { if (!message) return ''; if (/^Sin respuesta\s*\/\s*timeout$/i.test(message) || /^No response\s*\/\s*timeout$/i.test(message)) return t('noResponse'); const match = /^StatusCode\s+(\d+)$/i.exec(message) || /^Status code\s+(\d+)$/i.exec(message) || /^Código de estado\s+(\d+)$/i.exec(message); return match ? t('statusCode',{code:match[1]}) : message; }
+function setLanguage(lang, persist=true) { state.lang = lang === 'es' ? 'es' : 'en'; document.documentElement.lang = state.lang; document.querySelectorAll('[data-lang]').forEach(button => button.classList.toggle('active', button.dataset.lang === state.lang)); document.querySelectorAll('[data-i18n]').forEach(element => { const key=element.dataset.i18n; if (I18N[state.lang][key]) element.textContent=t(key); }); $('openFolder').title=t('openFolder'); $('openFolder').setAttribute('aria-label',t('openFolder')); if (persist) host('setLanguage',{language:state.lang}); updateRunChrome(); renderHistory(); if (state.records.length) renderAll(); }
+function toast(message, error=false) { clearTimeout(toastTimer); const element=$('toast'); element.textContent=message; element.className='toast show'+(error?' error':''); toastTimer=setTimeout(()=>element.className='toast',4200); }
+function parseParameters() { validation.textContent=''; const duration=Number(durationInput.value); const interval=Number(intervalInput.value.trim().replace(',','.')); const targets=targetsInput.value.split(/\r?\n/).map(value=>value.trim()).filter(Boolean).filter((value,index,list)=>list.findIndex(item=>item.toLowerCase()===value.toLowerCase())===index); if (!Number.isInteger(duration)||duration<=0) throw new Error(t('validationDuration')); if (!Number.isFinite(interval)||interval<=0) throw new Error(t('validationInterval')); if (!targets.length) throw new Error(t('validationTargets')); if (targets.some(target=>/\s/.test(target))) throw new Error(t('validationTargetWhitespace')); return {durationMinutes:duration,intervalSeconds:interval,targets}; }
+function setRunning(running, stopping=false) { state.running=running; state.stopping=stopping; app.classList.toggle('running',running); app.classList.toggle('stopping',stopping); startButton.disabled=running; stopButton.disabled=!running||stopping; durationInput.disabled=running; intervalInput.disabled=running; targetsInput.disabled=running; fileDrop.classList.toggle('disabled',running); fileInput.disabled=running; document.querySelectorAll('.history-item,.delete-run').forEach(element=>element.disabled=running); updateRunChrome(); }
+function updateRunChrome() { const status=$('mastStatus'); if (state.stopping) status.textContent=t('stopping'); else if (state.running) status.textContent=t('running',{targets:String(new Set(state.records.map(record=>record.target)).size||targetsInput.value.split(/\r?\n/).filter(Boolean).length)}); else status.textContent=state.source==='live-finished' ? t(state.lastRunState==='Stopped'?'stopped':state.lastRunState==='Incomplete'?'incomplete':'completed') : t('ready'); $('liveBadge').hidden=!state.running; }
+function normalizeRows(rows) { const list=Array.isArray(rows)?rows:[rows]; return list.map(row=>{ const rawTime=row.timestamp??row.Timestamp; const time=new Date(typeof rawTime==='string'?rawTime.replace(' ','T'):rawTime); const latencyRaw=row.latencyMs??row.LatencyMs??row.latency; const successRaw=row.success??row.Success; return {timestamp:time,target:String(row.target??row.Target??''),success:successRaw===true||String(successRaw).toLowerCase()==='true',latencyMs:latencyRaw===''||latencyRaw==null?null:Number(latencyRaw),errorMessage:String(row.errorMessage??row.ErrorMessage??row.error??'')}; }).filter(row=>!Number.isNaN(row.timestamp.getTime())&&row.target).sort((a,b)=>a.timestamp-b.timestamp); }
+function showDataset(source,name,records,id=null) { state.source=source; state.sourceId=id; state.sourceName=name; state.records=normalizeRows(records); state.knownChartTargets=new Set(state.records.map(record=>record.target)); state.chartTargets=new Set(state.knownChartTargets); state.tableTarget='all'; state.tableStatus='all'; state.page=1; dashboard.hidden=false; emptyState.hidden=true; renderAll(); }
+function appendLiveRecords(rows) {
+  const records = normalizeRows(rows);
+  for (const record of records) {
+    if (!state.knownChartTargets.has(record.target)) {
+      state.knownChartTargets.add(record.target);
+      state.chartTargets.add(record.target);
+    }
+  }
+  state.records.push(...records);
+  state.records.sort((a,b) => a.timestamp - b.timestamp);
+}
+function renderAll() { renderHeader(); renderMetrics(); renderTargetControls(); drawChart(); renderOutages(); renderTableControls(); renderTable(); }
+function queueRender() { if(renderQueued)return; renderQueued=true; requestAnimationFrame(()=>{renderQueued=false;renderAll();}); }
+function renderHeader() { const sourceKey=state.source==='live'||state.source==='live-finished'?'liveMeasurement':state.source==='history'?'savedRun':'externalFile'; $('sourceEyebrow').textContent=t(sourceKey); $('datasetName').textContent=state.sourceName||t('currentTest'); const targets=new Set(state.records.map(record=>record.target)).size; $('datasetDetail').textContent=t('loadedSamples',{count:formatNumber(state.records.length),targets:formatNumber(targets)}); }
+function metricsData() { const records=state.records,total=records.length,failures=records.filter(record=>!record.success).length,latencies=records.filter(record=>record.success&&Number.isFinite(record.latencyMs)).map(record=>record.latencyMs); const avg=latencies.length?latencies.reduce((sum,value)=>sum+value,0)/latencies.length:0; const first=records[0]?.timestamp,last=records.at(-1)?.timestamp; return {total,failures,loss:total?failures*100/total:0,avg,min:latencies.length?Math.min(...latencies):0,max:latencies.length?Math.max(...latencies):0,outages:findOutages(records),elapsed:first&&last?last-first:0}; }
+function renderMetrics() { const m=metricsData(); const cards=[['samples',formatNumber(m.total),''],['packetLoss',formatNumber(m.loss,2)+'%',m.loss?'bad':'good'],['average',formatNumber(m.avg,1)+' ms',''],['minimum',formatNumber(m.min,1)+' ms',''],['maximum',formatNumber(m.max,1)+' ms',''],['outages',formatNumber(m.outages.length),m.outages.length?'bad':'good'],['elapsed',formatDuration(m.elapsed),'']]; $('metrics').innerHTML=cards.map(([label,value,kind])=>`<div class="metric ${kind}"><span>${escapeHtml(t(label))}</span><strong>${escapeHtml(value)}</strong></div>`).join(''); }
+function findOutages(records) { const result=[]; const byTarget=Map.groupBy(records,record=>record.target); for(const [target,items] of byTarget){ let current=[]; const flush=()=>{if(current.length>=2)result.push({target,start:current[0].timestamp,end:current.at(-1).timestamp,count:current.length});current=[];}; for(const record of items){ if(record.success)flush(); else current.push(record); } flush(); } return result.sort((a,b)=>b.start-a.start); }
+function renderTargetControls() { const targets=[...new Set(state.records.map(record=>record.target))]; const box=$('chartTargets'); box.innerHTML=targets.map((target,index)=>`<button type="button" class="target-filter ${state.chartTargets.has(target)?'active':''}" data-target="${escapeHtml(target)}" style="--target-color:${palette[index%palette.length]}">${escapeHtml(target)}</button>`).join(''); box.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{ const target=button.dataset.target; state.chartTargets.has(target)?state.chartTargets.delete(target):state.chartTargets.add(target); button.classList.toggle('active',state.chartTargets.has(target)); drawChart(); })); }
+function drawChart() { const rect=chartBox.getBoundingClientRect(),width=Math.max(420,Math.floor(rect.width-24)),height=Math.max(230,Math.floor(rect.height-20)),dpr=window.devicePixelRatio||1; chart.width=width*dpr;chart.height=height*dpr;chart.style.width=width+'px';chart.style.height=height+'px'; const ctx=chart.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height); const records=state.records.filter(record=>state.chartTargets.has(record.target)); chartPoints=[]; if(!records.length){ctx.fillStyle='#8da2b5';ctx.font='12px Segoe UI';ctx.fillText(t('allTargets'),18,28);return;} const pad={l:47,r:16,t:16,b:29},w=width-pad.l-pad.r,h=height-pad.t-pad.b,t0=records[0].timestamp.getTime(),t1=records.at(-1).timestamp.getTime(),span=Math.max(1,t1-t0); const good=records.filter(record=>record.success&&Number.isFinite(record.latencyMs)); const maxLatency=Math.max(50,...good.map(record=>record.latencyMs),1); const x=record=>pad.l+((record.timestamp-t0)/span)*w,y=value=>pad.t+h-(Math.min(value,maxLatency)/maxLatency)*h; ctx.font='10px Consolas'; for(let i=0;i<=4;i++){const value=maxLatency*i/4,yy=pad.t+h-h*i/4;ctx.strokeStyle='#1d3042';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(pad.l+w,yy);ctx.stroke();ctx.fillStyle='#7890a3';ctx.fillText(formatNumber(value)+'ms',3,yy+3);} const targets=[...new Set(state.records.map(record=>record.target))]; for(const target of targets){ if(!state.chartTargets.has(target))continue; const color=palette[targets.indexOf(target)%palette.length],items=records.filter(record=>record.target===target);ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();let drawing=false; for(const record of items){const xx=x(record); if(record.success&&Number.isFinite(record.latencyMs)){const yy=y(record.latencyMs); if(!drawing){ctx.moveTo(xx,yy);drawing=true;}else ctx.lineTo(xx,yy);chartPoints.push({x:xx,y:yy,record,color});}else{drawing=false;ctx.stroke();ctx.beginPath();const yy=pad.t+h-3;ctx.fillStyle='#ff7180';ctx.beginPath();ctx.moveTo(xx,yy-5);ctx.lineTo(xx+4,yy);ctx.lineTo(xx,yy+5);ctx.lineTo(xx-4,yy);ctx.closePath();ctx.fill();ctx.beginPath();chartPoints.push({x:xx,y:yy,record,color:'#ff7180'});} }ctx.stroke();} ctx.fillStyle='#7890a3';ctx.font='10px Consolas';ctx.fillText(formatDate(new Date(t0),false),pad.l,height-7);const right=formatDate(new Date(t1),false);ctx.fillText(right,width-pad.r-ctx.measureText(right).width,height-7); }
+function renderOutages() { const outages=findOutages(state.records); $('outageCount').textContent=String(outages.length); if(!outages.length){$('outageList').innerHTML=`<div class="no-outages">${escapeHtml(t('noOutages'))}</div>`;return;} $('outageList').innerHTML=`<div class="outage-row head"><span>${t('outageTarget')}</span><span>${t('outageStart')}</span><span>${t('outageEnd')}</span><span>${t('outageDuration')}</span><span>${t('failedPings')}</span></div>`+outages.map(outage=>`<div class="outage-row"><span class="target">${escapeHtml(outage.target)}</span><span>${escapeHtml(formatDate(outage.start))}</span><span>${escapeHtml(formatDate(outage.end))}</span><span>${escapeHtml(formatDuration(outage.end-outage.start))}</span><span>${formatNumber(outage.count)}</span></div>`).join(''); }
+function renderTableControls() { const targets=[...new Set(state.records.map(record=>record.target))]; const select=$('tableTarget'); select.innerHTML=`<option value="all">${escapeHtml(t('allTargets'))}</option>`+targets.map(target=>`<option value="${escapeHtml(target)}">${escapeHtml(target)}</option>`).join(''); select.value=targets.includes(state.tableTarget)?state.tableTarget:'all'; $('tableStatus').value=state.tableStatus; }
+function filteredTableRecords() { return [...state.records].reverse().filter(record=>(state.tableTarget==='all'||record.target===state.tableTarget)&&(state.tableStatus==='all'||(state.tableStatus==='ok'&&record.success)||(state.tableStatus==='fail'&&!record.success))); }
+function renderTable() { const records=filteredTableRecords(),pages=Math.max(1,Math.ceil(records.length/state.pageSize));state.page=Math.min(Math.max(1,state.page),pages);const from=(state.page-1)*state.pageSize,to=Math.min(records.length,from+state.pageSize),slice=records.slice(from,to); $('sampleRows').innerHTML=slice.map(record=>`<tr><td>${escapeHtml(formatDate(record.timestamp))}</td><td><code>${escapeHtml(record.target)}</code></td><td><span class="status-pill ${record.success?'ok':'fail'}">${escapeHtml(record.success?t('ok'):t('fail'))}</span></td><td>${record.latencyMs==null?'—':escapeHtml(formatNumber(record.latencyMs,1)+' ms')}</td><td class="error-cell" title="${escapeHtml(localizedError(record.errorMessage))}">${escapeHtml(localizedError(record.errorMessage)||'—')}</td></tr>`).join(''); $('pageSummary').textContent=records.length?t('rows',{from:formatNumber(from+1),to:formatNumber(to),total:formatNumber(records.length)})+' · '+t('page',{page:formatNumber(state.page),pages:formatNumber(pages)}):t('rows',{from:'0',to:'0',total:'0'}); $('prevPage').disabled=state.page<=1;$('nextPage').disabled=state.page>=pages; }
+function renderHistory() { const box=$('historyList'); if(!state.history.length){box.innerHTML=`<div class="history-empty">${escapeHtml(t('historyEmpty'))}</div>`;return;} box.innerHTML=state.history.map(item=>{const stateKey=item.state==='Stopped'?'stateStopped':item.state==='Incomplete'?'stateIncomplete':'stateCompleted',stateClass=item.state==='Stopped'?'stopped':item.state==='Incomplete'?'incomplete':'completed';return `<button type="button" class="history-item ${state.sourceId===item.id?'active':''}" data-id="${escapeHtml(item.id)}" ${state.running?'disabled':''}><time>${escapeHtml(formatDate(item.timestamp))}</time><span class="history-meta"><span class="run-state ${stateClass}">${escapeHtml(t(stateKey))}</span><span>·</span><span>${formatNumber(item.samples)} ${escapeHtml(t('samples').toLowerCase())}</span><span>·</span><span>${formatNumber(item.lossPercent,1)}%</span></span><span class="delete-run" role="button" tabindex="0" data-delete="${escapeHtml(item.id)}" title="${escapeHtml(t('deleteRun'))}">×</span></button>`;}).join(''); box.querySelectorAll('.history-item').forEach(button=>button.addEventListener('click',event=>{if(state.running){toast(t('busyHistory'),true);return;}if(event.target.closest('[data-delete]'))return;host('loadHistory',{id:button.dataset.id});})); box.querySelectorAll('[data-delete]').forEach(button=>{const remove=event=>{event.stopPropagation();if(state.running)return;if(confirm(t('confirmDelete')))host('deleteHistory',{id:button.dataset.delete});};button.addEventListener('click',remove);button.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();remove(event);}});}); }
+function parseCsv(text) { const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;continue;}if(c==='"'&&!cell)quoted=true;else if(c===','){row.push(cell);cell='';}else if(c==='\n'){row.push(cell.replace(/\r$/,''));if(row.some(Boolean))rows.push(row);row=[];cell='';}else cell+=c;}if(cell||row.length){row.push(cell);rows.push(row);}if(!rows.length)return[];const headers=rows[0].map(value=>value.trim().replace(/^\uFEFF/,''));return rows.slice(1).map(values=>Object.fromEntries(headers.map((header,index)=>[header,(values[index]??'').trim()]))); }
+async function openExternal(file) { if(state.running){toast(t('busyHistory'),true);return;} const extension=file.name.toLowerCase().split('.').pop();if(!['csv','json'].includes(extension)){toast(t('fileType'),true);return;} try{const text=await file.text();let rows=extension==='json'?JSON.parse(text.replace(/^\uFEFF/,'')):parseCsv(text);const normalized=normalizeRows(rows);if(!normalized.length)throw new Error(t('emptyFile'));validation.textContent='';showDataset('external',file.name,normalized);renderHistory();}catch(error){toast(error.message===t('emptyFile')?error.message:t('fileRead')+' '+error.message,true);} }
+form.addEventListener('submit',event=>{event.preventDefault();try{const parameters=parseParameters();showDataset('live',t('currentTest'),[]);setRunning(true);host('start',parameters);}catch(error){validation.textContent=error.message;}});
+stopButton.addEventListener('click',()=>{if(!state.running||state.stopping)return;setRunning(true,true);host('stop');});
+document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.lang)));
+fileDrop.addEventListener('click',()=>{if(!state.running)fileInput.click();});fileInput.addEventListener('change',()=>{if(fileInput.files[0])openExternal(fileInput.files[0]);fileInput.value='';});
+for(const eventName of ['dragenter','dragover'])fileDrop.addEventListener(eventName,event=>{event.preventDefault();if(!state.running)fileDrop.classList.add('over');});for(const eventName of ['dragleave','drop'])fileDrop.addEventListener(eventName,event=>{event.preventDefault();fileDrop.classList.remove('over');});fileDrop.addEventListener('drop',event=>{if(event.dataTransfer.files[0])openExternal(event.dataTransfer.files[0]);});
+$('openFolder').addEventListener('click',()=>host('openResults'));$('tableTarget').addEventListener('change',event=>{state.tableTarget=event.target.value;state.page=1;renderTable();});$('tableStatus').addEventListener('change',event=>{state.tableStatus=event.target.value;state.page=1;renderTable();});$('prevPage').addEventListener('click',()=>{state.page--;renderTable();});$('nextPage').addEventListener('click',()=>{state.page++;renderTable();});
+chart.addEventListener('mousemove',event=>{if(!chartPoints.length){chartTip.style.display='none';return;}const rect=chart.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;let nearest=null,distance=Infinity;for(const point of chartPoints){const d=Math.hypot(point.x-x,point.y-y);if(d<distance){distance=d;nearest=point;}}if(!nearest||distance>18){chartTip.style.display='none';return;}const record=nearest.record;chartTip.innerHTML=`<strong>${escapeHtml(record.target)}</strong><br>${escapeHtml(formatDate(record.timestamp))}<br><span class="${record.success?'ok':'fail'}">${escapeHtml(record.success?(formatNumber(record.latencyMs,1)+' ms'):localizedError(record.errorMessage)||t('fail'))}</span>`;chartTip.style.display='block';const left=Math.min(rect.width-175,Math.max(8,nearest.x+14)),top=Math.min(rect.height-78,Math.max(8,nearest.y-34));chartTip.style.left=left+'px';chartTip.style.top=top+'px';});chart.addEventListener('mouseleave',()=>chartTip.style.display='none');
+new ResizeObserver(()=>{if(state.records.length)drawChart();}).observe(chartBox);
+if(window.chrome?.webview){window.chrome.webview.addEventListener('message',event=>{const message=event.data;switch(message.type){case'bootstrap':_bootstrap(message);break;case'runStarted':setRunning(true);break;case'runRecords':appendLiveRecords(message.records);queueRender();updateRunChrome();break;case'runStopping':setRunning(true,true);break;case'runFinished':state.lastRunState=message.outcome.state;state.source='live-finished';state.history=message.history||[];setRunning(false);renderHistory();renderAll();if(message.outcome.state==='Incomplete')toast(t('testFailed')+(message.outcome.error?' '+message.outcome.error:''),true);break;case'dataset':showDataset('history',message.id,message.records,message.id);renderHistory();break;case'history':state.history=message.history||[];if(state.sourceId&&!state.history.some(item=>item.id===state.sourceId)){state.sourceId=null;state.records=[];dashboard.hidden=true;emptyState.hidden=false;}renderHistory();break;case'error':toast(t(message.code)||t('operationFailed')+(message.detail?' '+message.detail:''),true);if(state.running)setRunning(false);break;}});}
+function _bootstrap(message){state.history=message.history||[];durationInput.value=message.settings.durationMinutes;intervalInput.value=message.settings.intervalSeconds;targetsInput.value=(message.settings.targets||[]).join('\n');setLanguage(message.settings.language||'en',false);renderHistory();}
+host('ready');
+</script>
+</body>
+</html>

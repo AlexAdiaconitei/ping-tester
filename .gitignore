@@ -1,0 +1,48 @@
+# .NET build outputs
+**/bin/
+**/obj/
+dist/
+publish/
+artifacts/
+TestResults/
+
+# Visual Studio and VS Code local state
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# NuGet-generated packages
+packages/
+*.nupkg
+*.snupkg
+
+# Ping Tester generated results
+results/
+ping_test_*.csv
+ping_test_*.json
+ping_test_*_resultado.html
+
+# Local configuration, secrets, and logs
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+
+# Windows and macOS metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary editor files
+*~
+*.swp
+*.swo

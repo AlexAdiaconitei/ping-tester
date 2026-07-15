@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Visor de test de ping</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --border:#273049; --text:#e7ecf5;
+    --muted:#8b96ad; --green:#3ddc84; --red:#ff5c72; --blue:#5aa9ff; --orange:#ffb45a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); padding:24px;
+  }
+  h1{font-size:20px; margin:0 0 4px;}
+  p.sub{color:var(--muted); margin:0 0 20px; font-size:14px;}
+  #drop{
+    border:2px dashed var(--border); border-radius:12px; padding:40px;
+    text-align:center; color:var(--muted); cursor:pointer; transition:.15s;
+  }
+  #drop.over{border-color:var(--blue); background:#131c31; color:var(--text);}
+  #drop input{display:none;}
+  .stats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:12px; margin:20px 0;
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:14px;
+  }
+  .card .label{font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .card .value{font-size:22px; font-weight:600;}
+  .value.red{color:var(--red);} .value.green{color:var(--green);}
+  #chartWrap{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px; margin-top:8px; overflow-x:auto; display:none;
+  }
+  #legend{display:flex; gap:16px; margin-bottom:10px; font-size:13px; color:var(--muted); flex-wrap:wrap;}
+  #legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  #outages{margin-top:16px; display:none;}
+  #outages table{width:100%; border-collapse:collapse; font-size:13px;}
+  #outages th, #outages td{padding:6px 10px; border-bottom:1px solid var(--border); text-align:left;}
+  #outages th{color:var(--muted); font-weight:500;}
+  #fileInfo{font-size:12px; color:var(--muted); margin-top:8px;}
+</style>
+</head>
+<body>
+
+  <h1>Visor de test de ping</h1>
+  <p class="sub">Arrastra aqui el CSV o JSON generado por ping_test.ps1 (tambien puedes hacer clic para elegir el fichero).</p>
+
+  <div id="drop">
+    Suelta el fichero aqui, o haz clic para seleccionarlo
+    <input type="file" id="fileInput" accept=".csv,.json">
+  </div>
+  <div id="fileInfo"></div>
+
+  <div class="stats" id="stats" style="display:none"></div>
+
+  <div id="chartWrap">
+    <div id="legend"></div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div id="outages">
+    <h3 style="font-size:15px;">Cortes detectados (fallos consecutivos)</h3>
+    <table id="outagesTable"></table>
+  </div>
+
+<script>
+// ping_test.ps1 sustituye "null" por el array de resultados al generar la copia automática.
+let EMBEDDED_DATA = null;
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+
+drop.addEventListener('click', () => fileInput.click());
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {
+  e.preventDefault(); drop.classList.remove('over');
+}));
+drop.addEventListener('drop', e => {
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+if (EMBEDDED_DATA && Array.isArray(EMBEDDED_DATA) && EMBEDDED_DATA.length) {
+  fileInfo.textContent = 'Resultados cargados automáticamente (' + EMBEDDED_DATA.length + ' muestras)';
+  drop.querySelector('input') && (drop.style.padding = '18px');
+  render(normalize(EMBEDDED_DATA));
+}
+
+function handleFile(file) {
+  fileInfo.textContent = 'Fichero: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rows;
+    try {
+      if (file.name.toLowerCase().endsWith('.json')) {
+        rows = JSON.parse(e.target.result);
+        if (!Array.isArray(rows)) rows = [rows];
+      } else {
+        rows = parseCsv(e.target.result);
+      }
+      rows = normalize(rows);
+      render(rows);
+    } catch (err) {
+      alert('No se pudo leer el fichero: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCsv(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const cells = line.split(',');
+    const obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = cells[i] !== undefined ? cells[i].trim() : '');
+    return obj;
+  });
+}
+
+function normalize(rows) {
+  return rows.map(r => ({
+    time: new Date((r.Timestamp || r.timestamp).replace(' ', 'T')),
+    target: r.Target || r.target,
+    success: (r.Success === true || r.Success === 'True' || r.Success === 'true' || r.success === true),
+    latency: (r.LatencyMs === '' || r.LatencyMs === null || r.LatencyMs === undefined) ? null : Number(r.LatencyMs ?? r.latency),
+    error: r.ErrorMessage || r.error || ''
+  })).filter(r => !isNaN(r.time.getTime()))
+    .sort((a,b) => a.time - b.time);
+}
+
+const palette = ['#5aa9ff', '#ffb45a', '#c084fc', '#3ddc84'];
+
+function render(rows) {
+  const total = rows.length;
+  const ok = rows.filter(r => r.success).length;
+  const fail = total - ok;
+  const lossPct = total ? (fail/total*100) : 0;
+  const latencies = rows.filter(r => r.success && r.latency !== null).map(r => r.latency);
+  const avg = latencies.length ? (latencies.reduce((a,b)=>a+b,0)/latencies.length) : 0;
+  const max = latencies.length ? Math.max(...latencies) : 0;
+  const min = latencies.length ? Math.min(...latencies) : 0;
+
+  // Detect outages: consecutive failed pings (across all targets, aligned in time)
+  const outages = [];
+  let cur = null;
+  rows.forEach(r => {
+    if (!r.success) {
+      if (!cur) cur = {start: r.time, end: r.time, count: 1};
+      else { cur.end = r.time; cur.count++; }
+    } else {
+      if (cur) { outages.push(cur); cur = null; }
+    }
+  });
+  if (cur) outages.push(cur);
+  const meaningfulOutages = outages.filter(o => o.count >= 2 || (o.end-o.start) >= 2000);
+
+  const statsDiv = document.getElementById('stats');
+  statsDiv.style.display = 'grid';
+  statsDiv.innerHTML = `
+    <div class="card"><div class="label">Muestras</div><div class="value">${total}</div></div>
+    <div class="card"><div class="label">OK</div><div class="value green">${ok}</div></div>
+    <div class="card"><div class="label">Fallos</div><div class="value red">${fail}</div></div>
+    <div class="card"><div class="label">% perdida</div><div class="value ${lossPct>0?'red':'green'}">${lossPct.toFixed(2)}%</div></div>
+    <div class="card"><div class="label">Latencia media</div><div class="value">${avg.toFixed(0)} ms</div></div>
+    <div class="card"><div class="label">Latencia min / max</div><div class="value">${min} / ${max} ms</div></div>
+    <div class="card"><div class="label">Cortes detectados</div><div class="value ${meaningfulOutages.length?'red':'green'}">${meaningfulOutages.length}</div></div>
+  `;
+
+  drawChart(rows);
+  renderOutages(meaningfulOutages);
+}
+
+function renderOutages(outages) {
+  const wrap = document.getElementById('outages');
+  const table = document.getElementById('outagesTable');
+  if (!outages.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  let html = '<tr><th>Inicio</th><th>Fin</th><th>Duracion</th><th>Pings fallidos</th></tr>';
+  outages.forEach(o => {
+    const durSec = Math.max(1, Math.round((o.end - o.start)/1000) + 1);
+    html += `<tr>
+      <td>${o.start.toLocaleString()}</td>
+      <td>${o.end.toLocaleString()}</td>
+      <td>${durSec}s</td>
+      <td>${o.count}</td>
+    </tr>`;
+  });
+  table.innerHTML = html;
+}
+
+function drawChart(rows) {
+  const chartWrap = document.getElementById('chartWrap');
+  chartWrap.style.display = 'block';
+  const canvas = document.getElementById('chart');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(900, Math.min(2200, rows.length * 4));
+  const cssHeight = 320;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const padL = 50, padR = 20, padT = 10, padB = 30;
+  const w = cssWidth - padL - padR;
+  const h = cssHeight - padT - padB;
+
+  const targets = [...new Set(rows.map(r => r.target))];
+  const legend = document.getElementById('legend');
+  legend.innerHTML = targets.map((t,i) =>
+    `<span><span class="dot" style="background:${palette[i % palette.length]}"></span>${t}</span>`
+  ).join('') + '<span><span class="dot" style="background:#ff5c72"></span>fallo</span>';
+
+  const t0 = rows[0].time.getTime();
+  const t1 = rows[rows.length-1].time.getTime();
+  const span = Math.max(1, t1 - t0);
+
+  const okLatencies = rows.filter(r => r.success && r.latency !== null).map(r => r.latency);
+  const maxLatency = Math.max(50, ...okLatencies, 1);
+
+  // axes
+  ctx.strokeStyle = '#273049';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+h); ctx.lineTo(padL+w, padT+h);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8b96ad';
+  ctx.font = '11px sans-serif';
+  const ySteps = 4;
+  for (let i=0;i<=ySteps;i++) {
+    const val = Math.round(maxLatency * i/ySteps);
+    const y = padT + h - (h * i/ySteps);
+    ctx.fillText(val + 'ms', 4, y+4);
+    ctx.strokeStyle = '#1c2438';
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+w,y); ctx.stroke();
+  }
+
+  function xPos(time) { return padL + ((time - t0)/span) * w; }
+  function yPos(lat) { return padT + h - (Math.min(lat,maxLatency)/maxLatency) * h; }
+
+  // outage bands (red) behind everything
+  ctx.fillStyle = 'rgba(255,92,114,0.15)';
+  let bandStart = null;
+  rows.forEach((r, idx) => {
+    if (!r.success) {
+      if (bandStart === null) bandStart = r.time.getTime();
+    } else if (bandStart !== null) {
+      const x1 = xPos(bandStart), x2 = xPos(r.time.getTime());
+      ctx.fillRect(x1, padT, Math.max(2, x2-x1), h);
+      bandStart = null;
+    }
+  });
+  if (bandStart !== null) {
+    const x1 = xPos(bandStart), x2 = padL + w;
+    ctx.fillRect(x1, padT, Math.max(2, x2-x1), h);
+  }
+
+  // line per target
+  targets.forEach((target, ti) => {
+    const color = palette[ti % palette.length];
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let started = false;
+    rows.filter(r => r.target === target).forEach(r => {
+      if (!r.success || r.latency === null) { started = false; return; }
+      const x = xPos(r.time.getTime()), y = yPos(r.latency);
+      if (!started) { ctx.moveTo(x,y); started = true; }
+      else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  });
+
+  // fail markers
+  ctx.fillStyle = '#ff5c72';
+  rows.forEach(r => {
+    if (!r.success) {
+      const x = xPos(r.time.getTime());
+      ctx.beginPath();
+      ctx.arc(x, padT+h-4, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  });
+
+  // x labels (start/end)
+  ctx.fillStyle = '#8b96ad';
+  ctx.fillText(rows[0].time.toLocaleTimeString(), padL, padT+h+20);
+  ctx.textAlign = 'right';
+  ctx.fillText(rows[rows.length-1].time.toLocaleTimeString(), padL+w, padT+h+20);
+  ctx.textAlign = 'left';
+}
+</script>
+</body>
+</html>
