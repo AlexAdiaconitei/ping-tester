@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111b">
+  <meta name="description" content="Ping Tester records latency, packet loss, and connection outages from a portable Windows app.">
+  <title>Ping Tester — See what your connection is doing</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="assets/app-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Ping Tester home">
+      <img src="assets/app-icon.png" width="38" height="38" alt="">
+      <span><strong>Ping Tester</strong><small data-i18n="brandTag">Connection recorder</small></span>
+    </a>
+
+    <nav class="main-nav" aria-label="Primary navigation">
+      <a href="#diagnose" data-i18n="navDiagnose">Why it helps</a>
+      <a href="#workflow" data-i18n="navWorkflow">How it works</a>
+      <a href="#about" data-i18n="navAbout">About</a>
+    </nav>
+
+    <div class="header-actions">
+      <a class="repository-link" href="https://github.com/AlexAdiaconitei/Ping-Tester" target="_blank" rel="noreferrer" aria-label="GitHub repository" title="GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.56v-2.24c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.04 1.77 2.72 1.26 3.38.96.1-.75.4-1.26.74-1.55-2.57-.29-5.27-1.29-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.47.11-3.05 0 0 .97-.31 3.16 1.18A10.98 10.98 0 0 1 12 6.09c.98 0 1.94.13 2.85.38 2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.4-2.71 5.38-5.29 5.67.42.36.79 1.07.79 2.16v3.29c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>
+      </a>
+      <div class="language-switch" role="group" aria-label="Language">
+        <button type="button" data-language="en" class="active" aria-pressed="true">EN</button>
+        <button type="button" data-language="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span><span data-i18n="heroEyebrow">Portable · Windows 10/11 · No console</span></p>
+        <h1 data-i18n-html="heroTitle">Your connection leaves a trace.<br><span>Ping Tester makes it visible.</span></h1>
+        <p class="hero-lead" data-i18n="heroLead">Run a repeatable connection test, watch latency and packet loss live, and keep the evidence when something goes wrong.</p>
+        <div class="hero-actions">
+          <a class="button primary" id="downloadButton" href="#" data-i18n="download">Download for Windows</a>
+          <a class="button secondary" href="https://ko-fi.com/K3Q5236GOO" target="_blank" rel="noreferrer">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h13v10a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V5Zm13 2v6h1a3 3 0 0 0 0-6h-1ZM8.1 9.1c-1.8 0-2.2 2.3-.8 3.3l3.2 2.3 3.2-2.3c1.4-1 .9-3.3-.8-3.3-1 0-1.6.7-2.4 1.4-.8-.7-1.4-1.4-2.4-1.4Z"/></svg>
+            <span data-i18n="kofi">Support on Ko-fi</span>
+          </a>
+        </div>
+        <div class="release-actions">
+          <a class="button release-notes" id="releaseNotesButton" href="#" target="_blank" rel="noreferrer" data-i18n="releaseNotes">Release notes</a>
+        </div>
+        <p class="download-note" data-i18n="downloadNote">Single portable executable · Results stay on your machine</p>
+      </div>
+
+      <div class="hero-instrument" aria-label="Animated latency monitor preview">
+        <div class="instrument-topline">
+          <div><span data-i18n="liveMeasurement">Live measurement</span><strong>1.1.1.1 · 8.8.8.8</strong></div>
+          <span class="live-chip"><i></i><span data-i18n="live">Live</span></span>
+        </div>
+        <div class="signal-route" aria-hidden="true">
+          <span class="route-label home" data-i18n="home">Home</span>
+          <i class="route-node start"></i><i class="route-line"></i><i class="route-pulse"></i><i class="route-node end"></i>
+          <span class="route-label internet" data-i18n="internet">Internet</span>
+        </div>
+        <div class="metric-strip">
+          <div><span data-i18n="packetLoss">Packet loss</span><strong>0.12%</strong></div>
+          <div><span data-i18n="average">Average</span><strong>14.6 ms</strong></div>
+          <div><span data-i18n="maximum">Maximum</span><strong>82 ms</strong></div>
+          <div><span data-i18n="outages">Outages</span><strong class="healthy">0</strong></div>
+        </div>
+        <div class="chart-preview">
+          <div class="chart-axis"><span>80</span><span>40</span><span>0 ms</span></div>
+          <svg viewBox="0 0 640 220" preserveAspectRatio="none" role="img" aria-label="Sample latency timeline">
+            <defs>
+              <linearGradient id="areaBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#58adff" stop-opacity=".22"/><stop offset="1" stop-color="#58adff" stop-opacity="0"/></linearGradient>
+              <linearGradient id="areaAmber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc66d" stop-opacity=".16"/><stop offset="1" stop-color="#ffc66d" stop-opacity="0"/></linearGradient>
+            </defs>
+            <g class="chart-grid"><path d="M0 20H640M0 110H640M0 200H640"/></g>
+            <path class="area blue" d="M0 176 28 172 56 177 84 168 112 172 140 161 168 169 196 166 224 48 252 164 280 170 308 157 336 164 364 170 392 159 420 165 448 161 476 169 504 155 532 166 560 158 588 169 616 161 640 166V220H0Z"/>
+            <path class="trace blue" d="M0 176 28 172 56 177 84 168 112 172 140 161 168 169 196 166 224 48 252 164 280 170 308 157 336 164 364 170 392 159 420 165 448 161 476 169 504 155 532 166 560 158 588 169 616 161 640 166"/>
+            <path class="area amber" d="M0 183 32 179 64 181 96 172 128 177 160 175 192 181 224 174 256 177 288 82 320 176 352 181 384 171 416 178 448 174 480 181 512 171 544 177 576 169 608 179 640 174V220H0Z"/>
+            <path class="trace amber" d="M0 183 32 179 64 181 96 172 128 177 160 175 192 181 224 174 256 177 288 82 320 176 352 181 384 171 416 178 448 174 480 181 512 171 544 177 576 169 608 179 640 174"/>
+          </svg>
+          <div class="chart-legend"><span><i class="blue"></i>1.1.1.1</span><span><i class="amber"></i>8.8.8.8</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="origin-note" aria-label="Project motivation">
+      <span class="origin-index">WHY / 01</span>
+      <p data-i18n="origin">After badly crimped cables, misconfigured repeaters, and enough questionable home-network fixes, guessing was no longer good enough. Ping Tester exists to turn “the internet feels wrong” into evidence.</p>
+    </section>
+
+    <section class="section diagnose" id="diagnose">
+      <div class="section-heading">
+        <p class="eyebrow" data-i18n="diagnoseEyebrow">Different failures. One timeline.</p>
+        <h2 data-i18n-html="diagnoseTitle">Find where the connection<br><span>stops behaving.</span></h2>
+        <p data-i18n="diagnoseCopy">Test the router, a public DNS server, or any hostname together. Separate target histories help tell a local fault from an upstream outage.</p>
+      </div>
+      <div class="fault-path">
+        <article>
+          <span class="fault-number">01</span>
+          <div><h3 data-i18n="faultCable">Cable or local network</h3><p data-i18n="faultCableCopy">A failing router target points back inside the house.</p></div>
+          <i class="fault-light coral"></i>
+        </article>
+        <article>
+          <span class="fault-number">02</span>
+          <div><h3 data-i18n="faultRepeater">Repeater or Wi-Fi path</h3><p data-i18n="faultRepeaterCopy">Compare stable wired results with intermittent wireless runs.</p></div>
+          <i class="fault-light amber"></i>
+        </article>
+        <article>
+          <span class="fault-number">03</span>
+          <div><h3 data-i18n="faultProvider">Provider or internet</h3><p data-i18n="faultProviderCopy">Local targets answer while external destinations drop out.</p></div>
+          <i class="fault-light blue"></i>
+        </article>
+      </div>
+    </section>
+
+    <section class="section workflow" id="workflow">
+      <div class="workflow-panel">
+        <div class="section-heading compact">
+          <p class="eyebrow" data-i18n="workflowEyebrow">A test you can repeat</p>
+          <h2 data-i18n="workflowTitle">Configure. Run. Compare.</h2>
+        </div>
+        <ol class="steps">
+          <li><span>01</span><div><h3 data-i18n="stepConfigure">Choose the test</h3><p data-i18n="stepConfigureCopy">Set duration, interval, and targets from the interface.</p></div></li>
+          <li><span>02</span><div><h3 data-i18n="stepWatch">Watch it live</h3><p data-i18n="stepWatchCopy">Follow latency, loss, outages, and each individual ping.</p></div></li>
+          <li><span>03</span><div><h3 data-i18n="stepKeep">Keep the evidence</h3><p data-i18n="stepKeepCopy">Every run leaves CSV and JSON history you can reopen later.</p></div></li>
+        </ol>
+      </div>
+      <div class="feature-stack">
+        <article><span class="feature-icon">↯</span><div><h3 data-i18n="featurePortable">One portable executable</h3><p data-i18n="featurePortableCopy">No installer and no loose application files to carry around.</p></div></article>
+        <article><span class="feature-icon">◎</span><div><h3 data-i18n="featureLocal">Local by design</h3><p data-i18n="featureLocalCopy">Results stay on your computer under LocalAppData.</p></div></article>
+        <article><span class="feature-icon">⇥</span><div><h3 data-i18n="featureImport">Open old results</h3><p data-i18n="featureImportCopy">Drop in CSV or JSON files from previous tests.</p></div></article>
+        <article><span class="feature-icon">A/Ñ</span><div><h3 data-i18n="featureLanguage">English and Spanish</h3><p data-i18n="featureLanguageCopy">Switch language instantly; the application remembers it.</p></div></article>
+      </div>
+    </section>
+
+    <section class="section about-section" id="about">
+      <div class="section-heading compact">
+        <p class="eyebrow" data-i18n="aboutEyebrow">Behind the project</p>
+        <h2 data-i18n="aboutTitle">Built from a real network headache.</h2>
+      </div>
+      <article class="about-card" id="aboutCard" aria-live="polite">
+        <div class="about-photo-wrap">
+          <img src="alex.webp" alt="Alex Adiaconitei" class="about-photo">
+        </div>
+        <div class="about-content">
+          <p class="about-loading" data-i18n="aboutLoading">Loading profile…</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="brand footer-brand">
+      <img src="assets/app-icon.png" width="34" height="34" alt="">
+      <span><strong>Ping Tester</strong><small data-i18n="footerTag">Measure first. Guess less.</small></span>
+    </div>
+    <p><span data-i18n="footerBuilt">Built by</span> <a href="https://github.com/AlexAdiaconitei">Alex Adiaconitei</a> · <a href="https://github.com/AlexAdiaconitei" data-i18n="sourceCode">Source code</a></p>
+  </footer>
+</body>
+</html>
